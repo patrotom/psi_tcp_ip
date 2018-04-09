@@ -6,9 +6,9 @@
 
 ## Specification ##
 
-* Use Linux built-in program `ncat` to test communication with your server from the client side. Use switch -n to not to print a newline and switch -e to skip escaping.
+* Use Linux built-in program `ncat` to test communication with your server from the client side. Use switch `-n` to not to print a newline and switch `-e` to skip escaping.
 
-Example:
+*Example:*
 ``` bash
 echo -ne "Peter is Peter" | nc localhost 10000
 ```
