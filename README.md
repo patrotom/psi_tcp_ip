@@ -4,4 +4,4 @@
 * The main aim is to mediate the communication between the robot and the user.
 * This communication will be realised using the TCP/IP protocol.
 
-** The specification will be filled up later **
+**The specification will be filled up later**
