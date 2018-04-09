@@ -1,4 +1,4 @@
-#TCP server#
+# TCP server #
 
 * Project written in the Python 3 language.
 * The main aim is to mediate the communication between the robot and the user.
