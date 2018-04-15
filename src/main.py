@@ -18,7 +18,6 @@ def login(connection, client_address):
         else:
             print('No data from:', client_address)
             break
-        
 
 def main():
     """Sample TCP/IP connection from server side"""
