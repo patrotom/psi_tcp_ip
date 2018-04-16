@@ -12,7 +12,6 @@ def main():
     sock.connect(server_address)
 
     try:
-
         # Send data
         message = b'This is the message.  It will be repeated.'
         print('sending {!r}'.format(message))
@@ -26,8 +25,8 @@ def main():
             data = sock.recv(16)
             amount_received += len(data)
             print('received {!r}'.format(data))
-
     finally:
         print('closing socket')
+        sock.close()
 
 main()
