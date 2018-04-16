@@ -5,9 +5,9 @@ BUFFER_SIZE = 32
 SERVER_KEY = 54621
 CLIENT_KEY = 45328
 
-SERVER_SYNTAX_ERROR = "SERVER_SYNTAX_ERROR".encode()
-SERVER_LOGIN_FAILED = "SERVER_LOGIN_FAILED".encode()
-SERVER_OK = "SERVER_OK".encode()
+SERVER_SYNTAX_ERROR = "301 SYNTAX_ERROR\\a\\b".encode()
+SERVER_LOGIN_FAILED = "300 LOGIN FAILED\\a\\b".encode()
+SERVER_OK = "200 OK\\a\\b".encode()
 
 class Authenticator:
     '''Class which handles authetication of a robot'''
@@ -17,6 +17,7 @@ class Authenticator:
         self.connection = connection
         self.message_count = 0
         self.my_hash = None
+        self.ascii_count = 0
     
     def Handle(self, client_hash = None):
         '''Method which directly handles authentication of a robot using other member methods'''
@@ -28,7 +29,8 @@ class Authenticator:
             self.connection.sendall(str(self.my_hash).encode())
             return True
         else:
-            if self.my_hash != int(client_hash):
+            tmp = (self.ascii_count * 1000 + CLIENT_KEY) % 65536
+            if tmp != int(client_hash):
                 self.connection.sendall(SERVER_LOGIN_FAILED)
                 return False
             else:
@@ -43,10 +45,9 @@ class Authenticator:
 
     def ComputeHash(self):
         '''Method which computes a hash from a name of a robot'''
-        ascii_count = 0
         for i in range(0, len(self.name), 1):
-            ascii_count += ord(self.name[i])
-        tmp = (ascii_count * 1000) % 65536
+            self.ascii_count += ord(self.name[i])
+        tmp = (self.ascii_count * 1000) % 65536
         return (tmp + SERVER_KEY) % 65536
 
 class Handler:
@@ -76,7 +77,6 @@ class Handler:
     def Parse(self):
         '''Method that is parsing messages from the input buffer'''
         message = self.buffer.partition('\\a\\b')
-        #print(message[2])
         if message[1]:
             self.buffer = message[2]
             return self.EvaluateMessage(message[0])
