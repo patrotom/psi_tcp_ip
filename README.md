@@ -20,8 +20,21 @@ echo -ne "Peter is Peter" | nc localhost 10000
 
 *Example:*
 ``` bash
-echo -n Mnau\!\\a\\b20576\\a\\bclose | nc localhost 10000
+echo -n Mnau\!\\a\\b20576 | nc localhost 10000
 ```
 
 * Computing of the hash: `((ASCII * 1000) + SERVER_KEY) % 65536`
     * `65536 = (2^16) - 1` - handling of the overflow of the 16 bit number
+* Test of the initial move:
+
+*Example*
+``` bash
+echo -n Mnau\!\\a\\b20576\\a\\bOK 1 1\\a\\bOK 1 2\\a\\b | nc localhost 10000
+```
+
+* Test of the initial move with an error (robot did not perform move forward) in moving:
+
+*Example*
+``` bash
+echo -n Mnau\!\\a\\b20576\\a\\bOK 1 1\\a\\bOK 1 1\\a\\bOK 1 2\\a\\b | nc localhost 10000
+```
