@@ -71,6 +71,10 @@ class Mover:
         self.connection = connection
         self.prev_coordinates = [999, 999]
         self.act_coordinates = [999, 1000]
+        self.act_direction = 4
+        self.quadrant = 0
+        self.desired_square = [0, 0]
+        self.move_coeficient = 0
 
     def setCoordinates(self, message):
         '''Method which parses coordinates from the message'''
@@ -83,7 +87,81 @@ class Mover:
     def checkMoveSuccess(self):
         '''Method which checks whether a robot moved forward'''
         return self.act_coordinates != self.prev_coordinates
+
+    def figureOutDirection(self):
+        '''Method which determines a direction which is robot standing'''
+        if self.act_coordinates[0] > self.prev_coordinates[0]:
+            self.act_direction = 1
+        elif self.act_coordinates[0] < self.prev_coordinates[0]:
+            self.act_direction = 3
+        elif self.act_coordinates[1] > self.prev_coordinates[1]:
+            self.act_direction = 0
+        elif self.act_coordinates[1] < self.prev_coordinates[1]:
+            self.act_direction = 2
+
+    def selectQuadrant(self):
+        '''Method which determines in which quadrant is our robot standing in'''
+        # Our aim will be firstly always to get our robot to the directions [2,2]/[-2,2]/[-2,-2]/[2,-2] 
+        if self.act_coordinates[0] > 0 and self.act_coordinates[1] > 0:
+            self.desired_square = [2, 2]
+            self.quadrant = 1
+        elif self.act_coordinates[0] < 0 and self.act_coordinates[1] > 0:
+            self.desired_square = [-2, 2]
+            self.quadrant = 2
+        elif self.act_coordinates[0] < 0 and self.act_coordinates[1] < 0:
+            self.desired_square = [-2, -2]
+            self.quadrant = 3
+        elif self.act_coordinates[0] > 0 and self.act_coordinates[1] < 0:
+            self.desired_square = [2, -2]
+            self.quadrant = 4
+
+    def changeDirection(self):
+        '''Method which change direction of a robot to one to the right'''
+        if self.act_direction == 3:
+            self.act_direction = 0
+        else:
+            self.act_direction += 1
+
+    def selectMove(self):
+        '''Method which returns desired move of our robot'''
+        print('Coordinates:', self.act_coordinates[0], self.act_coordinates[1])
+        print('Desired square:', self.desired_square[0], self.desired_square[1])
+        if abs(self.act_coordinates[1]) > abs(self.desired_square[1]):
+            if self.act_direction != 2:
+                self.changeDirection()
+                return SERVER_TURN_RIGHT
+            return SERVER_MOVE
         
+        elif abs(self.act_coordinates[1]) < abs(self.desired_square[1]):
+            if self.act_direction != 0:
+                self.changeDirection()
+                return SERVER_TURN_RIGHT
+            return SERVER_MOVE
+        
+        if self.quadrant == 1 or self.quadrant == 4:
+            if self.act_coordinates[0] > self.desired_square[0]:
+                if self.act_direction != 3:
+                    self.changeDirection()
+                    return SERVER_TURN_RIGHT
+                return SERVER_MOVE
+            elif self.act_coordinates[0] < self.desired_square[0]:
+                if self.act_direction != 1:
+                    self.changeDirection()
+                    return SERVER_TURN_RIGHT
+                return SERVER_MOVE
+        
+        elif self.quadrant == 2 or self.quadrant == 3:
+            if self.act_coordinates[0] > self.desired_square[0]:
+                if self.act_direction != 1:
+                    self.changeDirection()
+                    return SERVER_TURN_RIGHT
+                return SERVER_MOVE
+            elif self.act_coordinates[0] < self.desired_square[0]:
+                if self.act_direction != 3:
+                    self.changeDirection()
+                    return SERVER_TURN_RIGHT
+                return SERVER_MOVE
+
 class Handler:
     '''Class which handles communication with a robot'''
     def __init__(self, connection, client_address):
@@ -127,10 +205,21 @@ class Handler:
             if self.mover.checkMoveSuccess():
                 init_cnt +=1
     
+    def moveRobotToInnerSquare(self):
+        '''Method will directs our robot to the desired coordinates in the inner square'''
+        self.mover.figureOutDirection()
+        self.mover.selectQuadrant()
+        while True:
+            
+            if abs(self.mover.act_coordinates[0]) == 2 and abs(self.mover.act_coordinates[1]) == 2:
+                break
+            self.connection.sendall(self.mover.selectMove())
+            self.mover.setCoordinates(self.listener.getMessage())
+
     def Move(self):
         '''Method which handles moving of a robot'''
         self.initialMove()
-        
+        self.moveRobotToInnerSquare()
         
 def main():
     '''Main of the program'''

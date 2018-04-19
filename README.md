@@ -38,3 +38,10 @@ echo -n Mnau\!\\a\\b20576\\a\\bOK 1 1\\a\\bOK 1 2\\a\\b | nc localhost 10000
 ``` bash
 echo -n Mnau\!\\a\\b20576\\a\\bOK 1 1\\a\\bOK 1 1\\a\\bOK 1 2\\a\\b | nc localhost 10000
 ```
+
+* Test of the moving of a robot to the inner square:
+
+*Example*
+``` bash
+echo -n Mnau\!\\a\\b20576\\a\\bOK 4 5\\a\\bOK 5 5\\a\\bOK 5 4\\a\\bOK 5 3\\a\\bOK 5 2\\a\\bOK 4 2\\a\\bOK 3 2\\a\\bOK 2 2 | nc localhost 10000
+```

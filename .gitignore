@@ -1,6 +1,9 @@
 
 # Created by https://www.gitignore.io/api/code,python
 
+### User defined ignores ###
+sample
+
 ### Code ###
 # Visual Studio Code - https://code.visualstudio.com/
 .settings/
