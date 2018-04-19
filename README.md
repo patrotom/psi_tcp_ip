@@ -1,4 +1,4 @@
-# TCP server #
+# TCP/IP server #
 
 * Project written in the Python 3 language.
 * The main aim is to mediate the communication between the robot and the user.
@@ -15,8 +15,11 @@ echo -ne "Peter is Peter" | nc localhost 10000
 
 * Server can receive a whole message but it is not mandatory. You have to always check the buffer for the incoming bytes and process a message once delimiter `/a/b` is read.
 * It is recommended to separate the project into more logical layers.
-    * Receiving of recharging and 3 other types of messages from a client...  
-* Test of the authentication:
+    * Receiving of recharging and 3 other types of messages from a client...
+
+### Testing ###
+
+#### Authentication ####
 
 *Example:*
 ``` bash
@@ -32,16 +35,24 @@ echo -n Mnau\!\\a\\b20576 | nc localhost 10000
 echo -n Mnau\!\\a\\b20576\\a\\bOK 1 1\\a\\bOK 1 2\\a\\b | nc localhost 10000
 ```
 
-* Test of the initial move with an error (robot did not perform move forward) in moving:
+#### Initial move with an error (robot did not perform move forward) ####
 
 *Example*
 ``` bash
 echo -n Mnau\!\\a\\b20576\\a\\bOK 1 1\\a\\bOK 1 1\\a\\bOK 1 2\\a\\b | nc localhost 10000
 ```
 
-* Test of the moving of a robot to the inner square:
+#### Moving of a robot to the inner square ####
 
 *Example*
 ``` bash
-echo -n Mnau\!\\a\\b20576\\a\\bOK 4 5\\a\\bOK 5 5\\a\\bOK 5 4\\a\\bOK 5 3\\a\\bOK 5 2\\a\\bOK 4 2\\a\\bOK 3 2\\a\\bOK 2 2 | nc localhost 10000
+echo -n Mnau\!\\a\\b20576\\a\\bOK 4 5\\a\\bOK 5 5\\a\\bOK 5 5\\a\\bOK 5 4\\a\\bOK 5 3\\a\\bOK 5 2\\a\\bOK 5 2\\a\\bOK 4 2\\a\\bOK 3 2\\a\\bOK 2 2\\a\\b | nc localhost 10000
 ```
+
+* Reference output: `test/test1.out`
+
+``` bash
+echo -n Mnau\!\\a\\b20576\\a\\bOK -7 -6\\a\\bOK -6 -6\\a\\bOK -6 -6\\a\\bOK -6 -6\\a\\bOK -6 -6\\a\\bOK -6 -5\\a\\bOK -6 -4\\a\\bOK -6 -3\\a\\bOK -6 -2\\a\\bOK -6 -1\\a\\bOK -6 0\\a\\bOK -6 1\\a\\bOK -6 2\\a\\bOK -6 2\\a\\bOK -5 2\\a\\bOK -4 2\\a\\bOK -3 2\\a\\bOK -2 2\\a\\bOK -1 2\\a\\bOK 0 2\\a\\bOK 1 2\\a\\bOK 2 2\\a\\b | nc localhost 10000
+```
+
+* Reference output: `test/test2.out`
