@@ -16,10 +16,26 @@ SERVER_TURN_LEFT = '103 TURN LEFT\a\b'.encode()
 SERVER_TURN_RIGHT = '104 TURN RIGHT\a\b'.encode()
 SERVER_PICK_UP = '105 GET MESSAGE\a\b'.encode()
 SERVER_LOGOUT = '106 LOGOUT\a\b'.encode()
-SERVER_SYNTAX_ERROR = '301 SYNTAX ERROR\a\b'
-SERVER_LOGIC_ERROR = '302 LOGIC ERROR\a\b'
+SERVER_SYNTAX_ERROR = '301 SYNTAX ERROR\a\b'.encode()
+SERVER_LOGIC_ERROR = '302 LOGIC ERROR\a\b'.encode()
 CLIENT_RECHARGING = 'RECHARGING\a\b'
 CLIENT_FULL_POWER = 'FULL POWER\a\b'
+
+# CLIENT_USERNAME	<user name>\a\b	Zpráva s uživatelským jménem. Jméno může být libovolná sekvence znaků kromě kromě dvojice \a\b.	Umpa_Lumpa\a\b	12
+# CLIENT_CONFIRMATION	<16-bitové číslo v decimální notaci>\a\b	Zpráva s potvrzovacím kódem. Může obsahovat maximálně 5 čísel a ukončovací sekvenci \a\b.	1009\a\b	7
+# CLIENT_OK	OK <x> <y>\a\b	Potvrzení o provedení pohybu, kde x a y jsou souřadnice robota po provedení pohybového příkazu.	OK -3 -1\a\b	12
+# CLIENT_RECHARGING	RECHARGING\a\b	Robot se začal dobíjet a přestal reagovat na zprávy.		12
+# CLIENT_FULL_POWER	FULL POWER\a\b	Robot doplnil energii a opět příjímá příkazy.		12
+# CLIENT_MESSAGE	<text>\a\b	Text vyzvednutého tajného vzkazu. Může obsahovat jakékoliv znaky kromě ukončovací sekvence \a\b.	Haf!\a\b	100
+
+class Error(Exception):
+    pass
+class SyntaxError(Error):
+    pass
+class LogicalError(Error):
+    pass
+class LoginFailed(Error):
+    pass
 
 class Listener:
     '''Class which handles receiving the messages from a robot'''
@@ -40,7 +56,7 @@ class Listener:
                 self.buffer += raw_data
                 return True
     
-    def getMessage(self):
+    def getMessage(self, maxLength):
         '''Method that is parsing messages from the input buffer'''
         # Error handling: everywhere I am getting a message
         while True:
@@ -52,13 +68,15 @@ class Listener:
                     self.rechargeRobot()
                 else:
                     return message[0]
+            elif len(self.buffer) > maxLength:
+                raise SyntaxError
             if not self.Listen():
                 return False
     
     def rechargeRobot(self):
         '''Method which will recharge our robot'''
         while True:
-            self.connection.settimeout(1)
+            self.connection.settimeout(5)
             data = self.connection.recv(BUFFER_SIZE)
             if data:
                 raw_data = data.decode('ascii')
@@ -67,11 +85,7 @@ class Listener:
                 if message[1]:
                     self.buffer = message[2]
                     if message[0] != CLIENT_FULL_POWER:
-                        self.connection.sendall(SERVER_LOGIC_ERROR)
-                        return False
-                elif len(raw_data) >= 14:
-                    self.connection.sendall(SERVER_SYNTAX_ERROR)
-                    return False
+                        raise LogicalError
             
 class Authenticator:
     '''Class which handles authetication of a robot'''
@@ -84,7 +98,8 @@ class Authenticator:
 
     def validateName(self):
         '''Method which validates a name of a robot'''
-        return len(self.name) <= 10
+        if len(self.name) > 10:
+            raise SyntaxError 
 
     def computeHash(self):
         '''Method which computes a hash from a name of a robot'''
@@ -110,11 +125,13 @@ class Mover:
 
     def setCoordinates(self, message):
         '''Method which parses coordinates from the message'''
-        tmp = message[3:].split(' ')
+        tmp = message.split(' ')
+        if tmp[0] != 'OK' or len(tmp) > 3:
+            raise SyntaxError
         self.prev_coordinates[0] = self.act_coordinates[0]
         self.prev_coordinates[1] = self.act_coordinates[1]
-        self.act_coordinates[0] = int(tmp[0])
-        self.act_coordinates[1] = int(tmp[1])
+        self.act_coordinates[0] = int(tmp[1])
+        self.act_coordinates[1] = int(tmp[2])
 
     def checkMoveSuccess(self):
         '''Method which checks whether a robot moved forward'''
@@ -175,32 +192,39 @@ class Handler:
 
     def Handle(self):
         '''Method which handles whole process of finding a secret message'''
-        if not self.Authenticate():
-            return
-        self.initialMove()
-        self.moveRobotToInnerSquare()
-        if self.searchInnerSquare():
-            self.connection.sendall(SERVER_LOGOUT)
+        try:
+            self.Authenticate()
+            self.initialMove()
+            self.moveRobotToInnerSquare()
+            if self.searchInnerSquare():
+                self.connection.sendall(SERVER_LOGOUT)
+                return
+        except (SyntaxError, ValueError):
+            print('SyntaxError or ValueError')
+            self.connection.sendall(SERVER_SYNTAX_ERROR)
+        except LogicalError:
+            print('LogicalError')
+            self.connection.sendall(SERVER_LOGIC_ERROR)
+        except LoginFailed:
+            print('LoginFailed')
+            self.connection.sendall(SERVER_LOGIN_FAILED)
+        except socket.timeout:
+            print('SocketTimeout')
             return
         
     def Authenticate(self):
         '''Method which handles authentication of a robot'''
-        name = self.listener.getMessage()
+        name = self.listener.getMessage(10)
         authenticator = Authenticator(name, self.connection)
-        
-        if not authenticator.validateName():
-            self.connection.sendall(SERVER_SYNTAX_ERROR)
-            return False
+        authenticator.validateName()
 
         self.connection.sendall((str(authenticator.computeHash()) + '\a\b').encode())
 
-        client_hash = self.listener.getMessage()
-        if client_hash > 5:
-            self.connection.sendall(SERVER_SYNTAX_ERROR)
-            return False
+        client_hash = self.listener.getMessage(5)
+        if len(client_hash) > 5 or not str(client_hash).isdigit():
+            raise SyntaxError
         if not authenticator.compareHash(client_hash):
-            self.connection.sendall(SERVER_LOGIN_FAILED)
-            return False
+            raise LoginFailed
         
         self.connection.sendall(SERVER_OK)
         return True
@@ -210,8 +234,8 @@ class Handler:
         init_cnt = 0
         while init_cnt < 2:
             self.connection.sendall(SERVER_MOVE)
-            coordinates = self.listener.getMessage()
-            if coordinates > 10:
+            coordinates = self.listener.getMessage(10)
+            if len(coordinates) > 10:
                 self.connection.sendall(SERVER_SYNTAX_ERROR)
                 return False
             self.mover.setCoordinates(coordinates)
@@ -225,7 +249,7 @@ class Handler:
             if self.mover.act_coordinates[0] == 2 and self.mover.act_coordinates[1] == 2:
                 break
             self.connection.sendall(self.mover.selectMove())
-            self.mover.setCoordinates(self.listener.getMessage())
+            self.mover.setCoordinates(self.listener.getMessage(10))
     
     def turnRobot(self, direction):
         '''Method which will change direction of a robot to the left to prepare him for searching'''
@@ -233,7 +257,7 @@ class Handler:
             if self.mover.act_direction != direction:
                 self.mover.changeDirection()
                 self.connection.sendall(SERVER_TURN_RIGHT)
-                self.mover.setCoordinates(self.listener.getMessage())
+                self.mover.setCoordinates(self.listener.getMessage(10))
             else:
                 break
 
@@ -241,7 +265,7 @@ class Handler:
         '''Method which will move a robot one field straight and checks whether a robot moved'''
         while True:
             self.connection.sendall(SERVER_MOVE)
-            self.mover.setCoordinates(self.listener.getMessage())
+            self.mover.setCoordinates(self.listener.getMessage(10))
             if self.mover.checkMoveSuccess():
                 break
 
@@ -255,7 +279,7 @@ class Handler:
         '''Method which will let a robot search the inner square'''
         # Need to figure out whether it is mandatory to keep asking if the robot is not moving
         self.connection.sendall(SERVER_PICK_UP)
-        if self.pickUpMessage(self.listener.getMessage()):
+        if self.pickUpMessage(self.listener.getMessage(98)):
             return True
 
         for i in range(0, 5, 1):
@@ -263,7 +287,7 @@ class Handler:
                 self.turnRobot(2)
                 self.moveRobotForward()
                 self.connection.sendall(SERVER_PICK_UP)
-                if self.pickUpMessage(self.listener.getMessage()):
+                if self.pickUpMessage(self.listener.getMessage(98)):
                     return True
             if i == 0 or i == 2 or i == 4:
                 self.turnRobot(3)
@@ -272,7 +296,7 @@ class Handler:
             for _ in range(0, 4, 1):
                 self.moveRobotForward()
                 self.connection.sendall(SERVER_PICK_UP)
-                if self.pickUpMessage(self.listener.getMessage()):
+                if self.pickUpMessage(self.listener.getMessage(98)):
                     return True
         
 def main():
