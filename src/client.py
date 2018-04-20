@@ -13,7 +13,7 @@ def main():
 
     try:
         # Send data
-        message = b'\a\b'
+        message = b'\a'
         print('sending {!r}'.format(message))
         sock.sendall(message)
 

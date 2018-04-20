@@ -61,7 +61,8 @@ class Listener:
                     self.rechargeRobot()
                 else:
                     return message[0]
-            elif len(self.buffer) > maxLength:
+            elif len(self.buffer) > maxLength + 1:
+                print('Raising error', len(self.buffer), 'Max length', maxLength)
                 raise SyntaxError
             else:
                 self.Listen()
