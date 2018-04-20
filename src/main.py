@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 '''Sample TCP/IP server'''
 import socket
-import _thread
+import threading
 import time
 
 BUFFER_SIZE = 1024
@@ -51,7 +51,6 @@ class Listener:
     
     def getMessage(self, maxLength):
         '''Method that is parsing messages from the input buffer'''
-        # Error handling: everywhere I am getting a message
         while True:
             message = self.buffer.partition('\a\b')
             if message[1]:
@@ -180,10 +179,9 @@ class Mover:
 
 class Handler:
     '''Class which handles communication with a robot'''
-    def __init__(self, connection, client_address):
+    def __init__(self, connection):
         '''Constructor'''
         self.connection = connection
-        self.client_address = client_address
         self.listener = Listener(self.connection)
         self.mover = Mover (self.connection)
 
@@ -195,18 +193,23 @@ class Handler:
             self.moveRobotToInnerSquare()
             if self.searchInnerSquare():
                 self.connection.sendall(SERVER_LOGOUT)
+                self.connection.close()
                 return
         except (SyntaxError, ValueError):
             print('SyntaxError or ValueError')
             self.connection.sendall(SERVER_SYNTAX_ERROR)
+            self.connection.close()
         except LogicalError:
             print('LogicalError')
             self.connection.sendall(SERVER_LOGIC_ERROR)
+            self.connection.close()
         except LoginFailed:
             print('LoginFailed')
             self.connection.sendall(SERVER_LOGIN_FAILED)
+            self.connection.close()
         except socket.timeout:
             print('SocketTimeout')
+            self.connection.close()
             return
         
     def Authenticate(self):
@@ -276,7 +279,6 @@ class Handler:
 
     def searchInnerSquare(self):
         '''Method which will let a robot search the inner square'''
-        # Need to figure out whether it is mandatory to keep asking if the robot is not moving
         self.connection.sendall(SERVER_PICK_UP)
         if self.pickUpMessage(self.listener.getMessage(98)):
             return True
@@ -297,7 +299,20 @@ class Handler:
                 self.connection.sendall(SERVER_PICK_UP)
                 if self.pickUpMessage(self.listener.getMessage(98)):
                     return True
-        
+
+class myThread(threading.Thread):
+    '''Class which implements new Thread'''
+    def __init__(self, connection, client_address):
+        '''Constructor'''
+        threading.Thread.__init__(self)
+        self.connection = connection
+        self.client_address = client_address
+    
+    def run(self):
+        '''Method which tells our new Thread what to do'''
+        handler = Handler(self.connection)
+        handler.Handle()
+
 def main():
     '''Main of the program'''
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -307,11 +322,11 @@ def main():
     sock.bind(server_address)
 
     sock.listen(1)
-
+    threads = []
     while True:
-        print('Waiting for a connection...')
         connection, client_address = sock.accept()
-        c = Handler(connection, client_address)
-        c.Handle()
-        connection.close()
+        thread = myThread(connection, client_address)
+        threads += [thread]
+        thread.start()        
+
 main()
