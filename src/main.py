@@ -11,6 +11,8 @@ SERVER_OK = '200 OK\\a\\b'.encode()
 SERVER_MOVE = '102 MOVE\\a\\b'.encode()
 SERVER_TURN_LEFT = '103 TURN LEFT\\a\\b'.encode()
 SERVER_TURN_RIGHT = '104 TURN RIGHT\\a\\b'.encode()
+SERVER_PICK_UP = '105 GET MESSAGE\\a\\b'.encode()
+SERVER_LOGOUT = '106 LOGOUT\\a\\b'.encode()
 
 class Listener:
     '''Class which handles receiving the messages from a robot'''
@@ -144,7 +146,11 @@ class Handler:
         '''Method which handles whole process of finding a secret message'''
         if not self.Authenticate():
             return
-        self.Move()
+        self.initialMove()
+        self.moveRobotToInnerSquare()
+        if self.searchInnerSquare():
+            self.connection.sendall(SERVER_LOGOUT)
+            return
         
     def Authenticate(self):
         '''Method which handles authentication of a robot'''
@@ -201,25 +207,35 @@ class Handler:
             if self.mover.checkMoveSuccess():
                 break
 
+    def pickUpMessage(self, message):
+        '''Method which will let a robot to try to pick up a message and will return True if the message is found'''
+        if message != '':
+            return True
+        return False
+
     def searchInnerSquare(self):
         '''Method which will let a robot search the inner square'''
+        # Need to figure out whether it is mandatory to keep asking if the robot is not moving
+        self.connection.sendall(SERVER_PICK_UP)
+        if self.pickUpMessage(self.listener.getMessage()):
+            return True
+
         for i in range(0, 5, 1):
             if i != 0:
                 self.turnRobot(2)
                 self.moveRobotForward()
+                self.connection.sendall(SERVER_PICK_UP)
+                if self.pickUpMessage(self.listener.getMessage()):
+                    return True
             if i == 0 or i == 2 or i == 4:
                 self.turnRobot(3)
             elif i == 1 or i == 3:
                 self.turnRobot(1)
             for _ in range(0, 4, 1):
                 self.moveRobotForward()
-
-    def Move(self):
-        '''Method which handles moving of a robot'''
-        self.initialMove()
-        self.moveRobotToInnerSquare()
-        # self.connection.sendall('IN THE SQUARE'.encode())
-        self.searchInnerSquare()
+                self.connection.sendall(SERVER_PICK_UP)
+                if self.pickUpMessage(self.listener.getMessage()):
+                    return True
         
 def main():
     '''Main of the program'''
