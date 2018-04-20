@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 '''Sample TCP/IP server'''
 import socket
-BUFFER_SIZE = 512
+BUFFER_SIZE = 1024
 SERVER_KEY = 54621
 CLIENT_KEY = 45328
 
@@ -201,17 +201,16 @@ class Handler:
             if self.mover.checkMoveSuccess():
                 break
 
-    def findMessage(self):
+    def searchInnerSquare(self):
         '''Method which will let a robot search the inner square'''
-        self.turnRobot(3)
         for i in range(0, 5, 1):
             if i != 0:
                 self.turnRobot(2)
                 self.moveRobotForward()
-                if i == 1 or i == 3:
-                    self.turnRobot(1)
-                elif i == 2 or i == 4:
-                    self.turnRobot(3)
+            if i == 0 or i == 2 or i == 4:
+                self.turnRobot(3)
+            elif i == 1 or i == 3:
+                self.turnRobot(1)
             for _ in range(0, 4, 1):
                 self.moveRobotForward()
 
@@ -219,8 +218,8 @@ class Handler:
         '''Method which handles moving of a robot'''
         self.initialMove()
         self.moveRobotToInnerSquare()
-        self.connection.sendall('IN THE SQUARE'.encode())
-        self.findMessage()
+        # self.connection.sendall('IN THE SQUARE'.encode())
+        self.searchInnerSquare()
         
 def main():
     '''Main of the program'''

@@ -56,3 +56,12 @@ echo -n Mnau\!\\a\\b20576\\a\\bOK -7 -6\\a\\bOK -6 -6\\a\\bOK -6 -6\\a\\bOK -6 -
 ```
 
 * Reference output: `test/test2.out`
+
+#### Moving of a robot to the inner square and searching for the message####
+
+*Example*
+``` bash
+echo -n Mnau\!\\a\\b20576\\a\\bOK 4 5\\a\\bOK 5 5\\a\\bOK 5 5\\a\\bOK 5 4\\a\\bOK 5 3\\a\\bOK 5 2\\a\\bOK 5 2\\a\\bOK 4 2\\a\\bOK 3 2\\a\\bOK 2 2\\a\\bOK 1 2\\a\\bOK 0 2\\a\\bOK -1 2\\a\\bOK -2 2\\a\\bOK -2 2\\a\\bOK -2 2\\a\\bOK -2 2\\a\\bOK -2 1\\a\\bOK -2 1\\a\\bOK -2 1\\a\\bOK -2 1\\a\\bOK -1 1\\a\\bOK 0 1\\a\\bOK 1 1\\a\\bOK 2 1\\a\\bOK 2 1\\a\\bOK 2 0\\a\\bOK 2 0\\a\\bOK 1 0\\a\\bOK 0 0\\a\\bOK -1 0\\a\\bOK -2 0\\a\\bOK -2 0\\a\\bOK -2 0\\a\\bOK -2 0\\a\\bOK -2 -1\\a\\bOK -2 -1\\a\\bOK -2 -1\\a\\bOK -2 -1\\a\\bOK -1 -1\\a\\bOK 0 -1\\a\\bOK 1 -1\\a\\bOK 2 -1\\a\\bOK 2 -1\\a\\bOK 2 -2\\a\\bOK 2 -2\\a\\bOK 1 -2\\a\\bOK 0 -2\\a\\bOK -1 -2\\a\\bOK -2 -2\\a\\b | nc localhost 10000
+```
+
+* Reference output: `test/test3.out`
