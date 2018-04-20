@@ -1,18 +1,25 @@
 #!/usr/bin/python3
 '''Sample TCP/IP server'''
 import socket
+import _thread
+import time
+
 BUFFER_SIZE = 1024
 SERVER_KEY = 54621
 CLIENT_KEY = 45328
 
-SERVER_SYNTAX_ERROR = '301 SYNTAX_ERROR\\a\\b'.encode()
-SERVER_LOGIN_FAILED = '300 LOGIN FAILED\\a\\b'.encode()
-SERVER_OK = '200 OK\\a\\b'.encode()
-SERVER_MOVE = '102 MOVE\\a\\b'.encode()
-SERVER_TURN_LEFT = '103 TURN LEFT\\a\\b'.encode()
-SERVER_TURN_RIGHT = '104 TURN RIGHT\\a\\b'.encode()
-SERVER_PICK_UP = '105 GET MESSAGE\\a\\b'.encode()
-SERVER_LOGOUT = '106 LOGOUT\\a\\b'.encode()
+SERVER_SYNTAX_ERROR = '301 SYNTAX_ERROR\a\b'.encode()
+SERVER_LOGIN_FAILED = '300 LOGIN FAILED\a\b'.encode()
+SERVER_OK = '200 OK\a\b'.encode()
+SERVER_MOVE = '102 MOVE\a\b'.encode()
+SERVER_TURN_LEFT = '103 TURN LEFT\a\b'.encode()
+SERVER_TURN_RIGHT = '104 TURN RIGHT\a\b'.encode()
+SERVER_PICK_UP = '105 GET MESSAGE\a\b'.encode()
+SERVER_LOGOUT = '106 LOGOUT\a\b'.encode()
+SERVER_SYNTAX_ERROR = '301 SYNTAX ERROR\a\b'
+SERVER_LOGIC_ERROR = '302 LOGIC ERROR\a\b'
+CLIENT_RECHARGING = 'RECHARGING\a\b'
+CLIENT_FULL_POWER = 'FULL POWER\a\b'
 
 class Listener:
     '''Class which handles receiving the messages from a robot'''
@@ -25,23 +32,47 @@ class Listener:
     def Listen(self):
         '''Method that reads data from the buffer'''
         while True:
+            self.connection.settimeout(1)
             data = self.connection.recv(BUFFER_SIZE)
             if data:
                 raw_data = data.decode('ascii')
                 print('Received:', raw_data)
                 self.buffer += raw_data
-                return self.buffer
+                return True
     
     def getMessage(self):
         '''Method that is parsing messages from the input buffer'''
+        # Error handling: everywhere I am getting a message
         while True:
-            message = self.buffer.partition('\\a\\b')
+            message = self.buffer.partition('\a\b')
             if message[1]:
                 self.buffer = message[2]
                 print(message[0])
-                return message[0]
-            self.Listen()
-
+                if message[0] == CLIENT_RECHARGING:
+                    self.rechargeRobot()
+                else:
+                    return message[0]
+            if not self.Listen():
+                return False
+    
+    def rechargeRobot(self):
+        '''Method which will recharge our robot'''
+        while True:
+            self.connection.settimeout(1)
+            data = self.connection.recv(BUFFER_SIZE)
+            if data:
+                raw_data = data.decode('ascii')
+                self.buffer += raw_data
+                message = self.buffer.partition('\a\b')
+                if message[1]:
+                    self.buffer = message[2]
+                    if message[0] != CLIENT_FULL_POWER:
+                        self.connection.sendall(SERVER_LOGIC_ERROR)
+                        return False
+                elif len(raw_data) >= 14:
+                    self.connection.sendall(SERVER_SYNTAX_ERROR)
+                    return False
+            
 class Authenticator:
     '''Class which handles authetication of a robot'''
     def __init__(self, name, connection):
@@ -53,7 +84,7 @@ class Authenticator:
 
     def validateName(self):
         '''Method which validates a name of a robot'''
-        return len(self.name) < 10
+        return len(self.name) <= 10
 
     def computeHash(self):
         '''Method which computes a hash from a name of a robot'''
@@ -161,9 +192,12 @@ class Handler:
             self.connection.sendall(SERVER_SYNTAX_ERROR)
             return False
 
-        self.connection.sendall((str(authenticator.computeHash()) + '\\a\\b').encode())
+        self.connection.sendall((str(authenticator.computeHash()) + '\a\b').encode())
 
         client_hash = self.listener.getMessage()
+        if client_hash > 5:
+            self.connection.sendall(SERVER_SYNTAX_ERROR)
+            return False
         if not authenticator.compareHash(client_hash):
             self.connection.sendall(SERVER_LOGIN_FAILED)
             return False
@@ -176,7 +210,11 @@ class Handler:
         init_cnt = 0
         while init_cnt < 2:
             self.connection.sendall(SERVER_MOVE)
-            self.mover.setCoordinates(self.listener.getMessage())
+            coordinates = self.listener.getMessage()
+            if coordinates > 10:
+                self.connection.sendall(SERVER_SYNTAX_ERROR)
+                return False
+            self.mover.setCoordinates(coordinates)
             if self.mover.checkMoveSuccess():
                 init_cnt +=1
     

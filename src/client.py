@@ -13,7 +13,7 @@ def main():
 
     try:
         # Send data
-        message = b'This is the message.  It will be repeated.'
+        message = b'\a\b'
         print('sending {!r}'.format(message))
         sock.sendall(message)
 
