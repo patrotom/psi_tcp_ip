@@ -18,15 +18,8 @@ SERVER_PICK_UP = '105 GET MESSAGE\a\b'.encode()
 SERVER_LOGOUT = '106 LOGOUT\a\b'.encode()
 SERVER_SYNTAX_ERROR = '301 SYNTAX ERROR\a\b'.encode()
 SERVER_LOGIC_ERROR = '302 LOGIC ERROR\a\b'.encode()
-CLIENT_RECHARGING = 'RECHARGING\a\b'
-CLIENT_FULL_POWER = 'FULL POWER\a\b'
-
-# CLIENT_USERNAME	<user name>\a\b	Zpráva s uživatelským jménem. Jméno může být libovolná sekvence znaků kromě kromě dvojice \a\b.	Umpa_Lumpa\a\b	12
-# CLIENT_CONFIRMATION	<16-bitové číslo v decimální notaci>\a\b	Zpráva s potvrzovacím kódem. Může obsahovat maximálně 5 čísel a ukončovací sekvenci \a\b.	1009\a\b	7
-# CLIENT_OK	OK <x> <y>\a\b	Potvrzení o provedení pohybu, kde x a y jsou souřadnice robota po provedení pohybového příkazu.	OK -3 -1\a\b	12
-# CLIENT_RECHARGING	RECHARGING\a\b	Robot se začal dobíjet a přestal reagovat na zprávy.		12
-# CLIENT_FULL_POWER	FULL POWER\a\b	Robot doplnil energii a opět příjímá příkazy.		12
-# CLIENT_MESSAGE	<text>\a\b	Text vyzvednutého tajného vzkazu. Může obsahovat jakékoliv znaky kromě ukončovací sekvence \a\b.	Haf!\a\b	100
+CLIENT_RECHARGING = 'RECHARGING'
+CLIENT_FULL_POWER = 'FULL POWER'
 
 class Error(Exception):
     pass
@@ -63,15 +56,15 @@ class Listener:
             message = self.buffer.partition('\a\b')
             if message[1]:
                 self.buffer = message[2]
-                print(message[0])
+                print(message[0], message[2])
                 if message[0] == CLIENT_RECHARGING:
                     self.rechargeRobot()
                 else:
                     return message[0]
             elif len(self.buffer) > maxLength:
                 raise SyntaxError
-            if not self.Listen():
-                return False
+            else:
+                self.Listen()
     
     def rechargeRobot(self):
         '''Method which will recharge our robot'''
@@ -83,9 +76,12 @@ class Listener:
                 self.buffer += raw_data
                 message = self.buffer.partition('\a\b')
                 if message[1]:
+                    print(message[0], message[2])
                     self.buffer = message[2]
                     if message[0] != CLIENT_FULL_POWER:
                         raise LogicalError
+                    else:
+                        return
             
 class Authenticator:
     '''Class which handles authetication of a robot'''
@@ -99,7 +95,7 @@ class Authenticator:
     def validateName(self):
         '''Method which validates a name of a robot'''
         if len(self.name) > 10:
-            raise SyntaxError 
+            raise SyntaxError
 
     def computeHash(self):
         '''Method which computes a hash from a name of a robot'''
@@ -222,6 +218,8 @@ class Handler:
 
         client_hash = self.listener.getMessage(5)
         if len(client_hash) > 5 or not str(client_hash).isdigit():
+            print(client_hash, str(client_hash).isdigit())
+            print('Rising exception')
             raise SyntaxError
         if not authenticator.compareHash(client_hash):
             raise LoginFailed
