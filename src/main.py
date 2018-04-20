@@ -131,10 +131,6 @@ class Mover:
                 return SERVER_TURN_RIGHT
             return SERVER_MOVE
 
-    def findMessage(self):
-        '''Method which will let a robot search the inner square'''
-
-
 class Handler:
     '''Class which handles communication with a robot'''
     def __init__(self, connection, client_address):
@@ -186,11 +182,45 @@ class Handler:
                 break
             self.connection.sendall(self.mover.selectMove())
             self.mover.setCoordinates(self.listener.getMessage())
+    
+    def turnRobot(self, direction):
+        '''Method which will change direction of a robot to the left to prepare him for searching'''
+        while True:
+            if self.mover.act_direction != direction:
+                self.mover.changeDirection()
+                self.connection.sendall(SERVER_TURN_RIGHT)
+                self.mover.setCoordinates(self.listener.getMessage())
+            else:
+                break
+
+    def moveRobotForward(self):
+        '''Method which will move a robot one field straight and checks whether a robot moved'''
+        while True:
+            self.connection.sendall(SERVER_MOVE)
+            self.mover.setCoordinates(self.listener.getMessage())
+            if self.mover.checkMoveSuccess():
+                break
+
+    def findMessage(self):
+        '''Method which will let a robot search the inner square'''
+        self.turnRobot(3)
+        for i in range(0, 5, 1):
+            if i != 0:
+                self.turnRobot(2)
+                self.moveRobotForward()
+                if i == 1 or i == 3:
+                    self.turnRobot(1)
+                elif i == 2 or i == 4:
+                    self.turnRobot(3)
+            for _ in range(0, 4, 1):
+                self.moveRobotForward()
 
     def Move(self):
         '''Method which handles moving of a robot'''
         self.initialMove()
         self.moveRobotToInnerSquare()
+        self.connection.sendall('IN THE SQUARE'.encode())
+        self.findMessage()
         
 def main():
     '''Main of the program'''
