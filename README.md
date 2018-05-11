@@ -76,7 +76,7 @@ Výsledný potvrzovací kód serveru se jako text pošle klintovi ve zprávě SE
 
 Potvrzovací kód klienta se odešle serveru ve zpráve CLIENT_CONFIRMATION, který z něj vypočítá zpátky hash a porovná jej s původním hashem uživatelského jména. Pokud se obě hodnoty shodují, odešle zprávy SERVER_OK, v opačném prípadě reaguje zprávou SERVER_LOGIN_FAILED a ukončí spojení. Celá sekvence je na následujícím obrázku:
 
-
+![alt text](https://gitlab.fit.cvut.cz/patrotom-internal/BI-PSI/tcp-ip-project/blob/master/pictures/pic1.png "Picture 1")
 
 Server dopředu nezná uživatelská jména. Roboti proto mohou zvolit jakékoliv jméno, ale musí znát klíč klienta i serveru. Dvojice klíčů zajistí oboustranou autentizaci a zároveň zabrání, aby byl autentizační proces kompromitován prostým odposlechem komunikace.
 
@@ -84,7 +84,7 @@ Server dopředu nezná uživatelská jména. Roboti proto mohou zvolit jakékoli
 
 Robot se může pohybovat pouze rovně (SERVER_MOVE) a je schopen provést otočení na místě doprava (SERVER_TURN_RIGHT) i doleva (SERVER_TURN_LEFT). Po každém příkazu k pohybu odešle potvrzení (CLIENT_OK), jehož součástí je i aktuální souřadnice. Pozor - roboti jsou v provozu již dlouhou dobu, takže začínají chybovat. Občas se stane, že se nepohnou kupředu. Tuto situaci je třeba detekovat a správně na ni zareagovat! Pozice robota není serveru na začátku komunikace známa. Server musí zjistit polohu robota (pozici a směr) pouze z jeho odpovědí. Z důvodů prevence proti nekonečnému bloudění robota v prostoru, má každý robot omezený počet pohybů (posunutí vpřed i otočení). Počet pohybů by měl být dostatečný pro rozumný přesun robota k cíli. Následuje ukázka komunkace. Server nejdříve pohne dvakrát robotem kupředu, aby detekoval jeho aktuální stav a po té jej navádí směrem k cílovým souřadnicím.
 
-
+![alt text](https://gitlab.fit.cvut.cz/patrotom-internal/BI-PSI/tcp-ip-project/blob/master/pictures/pic2.png "Picture 2")
 
 Tuto částo komunikace nelze přeskočit, robot očekává alespoň jeden pohybový příkaz - SERVER_MOVE, SERVER_TURN_LEFT nebo SERVER_TURN_RIGHT!
 
@@ -94,17 +94,17 @@ Pozor! Roboti občas chybují a nedaří se jim vykonat pohyb vpřed. V případ
 
 Poté, co robot dosáhne cílové oblasti (jedná se o čtverec s rohovými souřadnicemi [2,2], [2,-2], [-2,2] a [-2,-2] včetně), tak začne prohledávat celou oblast, tedy pokusí vyzvednout vzkaz ze včech 25 políček cílové oblasti (SERVER_PICK_UP). Pokud je robot požádán o vyzvednutí vzkazu a nenachází se v cílové oblasti, spustí se autodestrukce robota a komunikace se serverem je přerušena. Pokud je políčko prázdné a neobsahuje vzkaz, robot odpoví prázdnou zprávou CLIENT_MESSAGE - „\a\b“. (Je garantováno, že hledaná zpráva obsahuje vždy neprázdný textový řetězec.) V opačném případě pošle serveru text vyzvednutého tajného vzkazu a server ukončí spojení zprávou SERVER_LOGOUT. (Je zaručeno, že tajný vzkaz se nikdy neshoduje se zprávou CLIENT_RECHARGING, pokud je tato zpráva serverem obdržena po žádosti o vyzvednutí jedná se vždy o dobíjení.) Poté klient i server ukončí spojení. Ukázka prohledávání cílové oblasti:
 
-
+![alt text](https://gitlab.fit.cvut.cz/patrotom-internal/BI-PSI/tcp-ip-project/blob/master/pictures/pic3.png "Picture 3")
 
 ## Dobíjení ##
 
 Každý z robotů má omezený zdroj energie. Pokud mu začne docházet baterie, oznámí to serveru a poté se začne sám ze solárního panelu dobíjet. Během dobíjení nereaguje na žádné zprávy. Až skončí, informuje server a pokračuje v činnosti tam, kde přestal před dobíjením. Pokud robot neukončí dobíjení do časového intervalu TIMEOUT_RECHARGING, server ukončí spojení.
 
-
+![alt text](https://gitlab.fit.cvut.cz/patrotom-internal/BI-PSI/tcp-ip-project/blob/master/pictures/pic4.png "Picture 4")
 
 Další ukázka:
 
-
+![alt text](https://gitlab.fit.cvut.cz/patrotom-internal/BI-PSI/tcp-ip-project/blob/master/pictures/pic5.png "Picture 5")
 
 ## Chybové situace ##
 
@@ -206,7 +206,7 @@ Stáhněte a rozbalte obraz. Výsledný soubor spusťte ve VirtualBoxu. Po spuš
 
 Prvním parametrem je číslo portu, na kterém bude naslouchat váš server. Následuje parametr se vzdálenou adresou serveru. Pokud je váš server spuštěn na stejném počítači jako VirtualBox, použijte adresu defaultní brány. Postup je naznačen na následujícím obrázku:
 
-![alt text](/bi-psi_2016_task1_v1.png example)
+![alt text](https://gitlab.fit.cvut.cz/patrotom-internal/BI-PSI/tcp-ip-project/blob/master/pictures/pic6.png "Picture 6")
 
 Výstup je poměrně dlouhý, proto je výhodné přesměrovat jej příkazu less, ve kterém se lze dobře pohybovat.
 
