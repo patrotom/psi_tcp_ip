@@ -76,27 +76,7 @@ Výsledný potvrzovací kód serveru se jako text pošle klintovi ve zprávě SE
 
 Potvrzovací kód klienta se odešle serveru ve zpráve CLIENT_CONFIRMATION, který z něj vypočítá zpátky hash a porovná jej s původním hashem uživatelského jména. Pokud se obě hodnoty shodují, odešle zprávy SERVER_OK, v opačném prípadě reaguje zprávou SERVER_LOGIN_FAILED a ukončí spojení. Celá sekvence je na následujícím obrázku:
 
-`Klient                  Server`
 
-`------------------------------------------`
-
-`CLIENT_USER         --->`
-
-`                    <---    SERVER_CONFIRMATION`
-
-`CLIENT_CONFIRMATION --->`
-
-`                    <---    SERVER_OK`
-
-`                              nebo`
-
-`                            SERVER_LOGIN_FAILED`
-
-`                      .`
-
-`                      .`
-
-`                      .`
 
 Server dopředu nezná uživatelská jména. Roboti proto mohou zvolit jakékoliv jméno, ale musí znát klíč klienta i serveru. Dvojice klíčů zajistí oboustranou autentizaci a zároveň zabrání, aby byl autentizační proces kompromitován prostým odposlechem komunikace.
 
@@ -104,39 +84,7 @@ Server dopředu nezná uživatelská jména. Roboti proto mohou zvolit jakékoli
 
 Robot se může pohybovat pouze rovně (SERVER_MOVE) a je schopen provést otočení na místě doprava (SERVER_TURN_RIGHT) i doleva (SERVER_TURN_LEFT). Po každém příkazu k pohybu odešle potvrzení (CLIENT_OK), jehož součástí je i aktuální souřadnice. Pozor - roboti jsou v provozu již dlouhou dobu, takže začínají chybovat. Občas se stane, že se nepohnou kupředu. Tuto situaci je třeba detekovat a správně na ni zareagovat! Pozice robota není serveru na začátku komunikace známa. Server musí zjistit polohu robota (pozici a směr) pouze z jeho odpovědí. Z důvodů prevence proti nekonečnému bloudění robota v prostoru, má každý robot omezený počet pohybů (posunutí vpřed i otočení). Počet pohybů by měl být dostatečný pro rozumný přesun robota k cíli. Následuje ukázka komunkace. Server nejdříve pohne dvakrát robotem kupředu, aby detekoval jeho aktuální stav a po té jej navádí směrem k cílovým souřadnicím.
 
-`Klient                  Server`
 
-`------------------------------------------`
-
-`                  .`
-
-`                  .`
-
-`                  .`
-
-`                <---    SERVER_MOVE`
-
-`CLIENT_CONFIRM  --->`
-
-`                <---    SERVER_MOVE`
-
-`CLIENT_CONFIRM  --->`
-                
-`                <---    SERVER_MOVE`
- 
-`                          nebo`
-                        
-`                        SERVER_TURN_LEFT`
-
-`                          nebo`
-
-`                        SERVER_TURN_RIGHT`
-
-`                  .`
-
-`                  .`
-
-`                  .`
 
 Tuto částo komunikace nelze přeskočit, robot očekává alespoň jeden pohybový příkaz - SERVER_MOVE, SERVER_TURN_LEFT nebo SERVER_TURN_RIGHT!
 
@@ -146,106 +94,17 @@ Pozor! Roboti občas chybují a nedaří se jim vykonat pohyb vpřed. V případ
 
 Poté, co robot dosáhne cílové oblasti (jedná se o čtverec s rohovými souřadnicemi [2,2], [2,-2], [-2,2] a [-2,-2] včetně), tak začne prohledávat celou oblast, tedy pokusí vyzvednout vzkaz ze včech 25 políček cílové oblasti (SERVER_PICK_UP). Pokud je robot požádán o vyzvednutí vzkazu a nenachází se v cílové oblasti, spustí se autodestrukce robota a komunikace se serverem je přerušena. Pokud je políčko prázdné a neobsahuje vzkaz, robot odpoví prázdnou zprávou CLIENT_MESSAGE - „\a\b“. (Je garantováno, že hledaná zpráva obsahuje vždy neprázdný textový řetězec.) V opačném případě pošle serveru text vyzvednutého tajného vzkazu a server ukončí spojení zprávou SERVER_LOGOUT. (Je zaručeno, že tajný vzkaz se nikdy neshoduje se zprávou CLIENT_RECHARGING, pokud je tato zpráva serverem obdržena po žádosti o vyzvednutí jedná se vždy o dobíjení.) Poté klient i server ukončí spojení. Ukázka prohledávání cílové oblasti:
 
-`Klient                  Server`
 
-`------------------------------------------`
-
-`                  .`
-
-`                  .`
-
-`                  .`
-
-`                <---    SERVER_PICK_UP`
-
-`CLIENT_MESSAGE  --->`
- 
-`                <---    SERVER_MOVE`
-
-`CLIENT_OK       --->`
-
-`                <---    SERVER_PICK_UP`
-
-`CLIENT_MESSAGE  --->`
-
-`                <---    SERVER_TURN_RIGHT`
-
-`CLIENT_OK       --->`
-                
-`                <---    SERVER_MOVE`
-
-`CLIENT_OK       --->`
-                
-`                <---    SERVER_PICK_UP`
-
-`CLIENT_MESSAGE  --->`
-
-`                <---    SERVER_LOGOUT`
 
 ## Dobíjení ##
 
 Každý z robotů má omezený zdroj energie. Pokud mu začne docházet baterie, oznámí to serveru a poté se začne sám ze solárního panelu dobíjet. Během dobíjení nereaguje na žádné zprávy. Až skončí, informuje server a pokračuje v činnosti tam, kde přestal před dobíjením. Pokud robot neukončí dobíjení do časového intervalu TIMEOUT_RECHARGING, server ukončí spojení.
 
-`Klient                    Server`
 
-`------------------------------------------`
-
-`CLIENT_USER       --->`
-
-`                  <---    SERVER_CONFIRMATION`
-
-`CLIENT_RECHARGING --->`
-
-
-`      ...`
-
-
-`CLIENT_FULL_POWER --->`
-
-`CLIENT_CONFIRMATION   --->`
-                  
-`                  <---    SERVER_OK`
- 
-`                            nebo`
-                          
-`                          SERVER_LOGIN_FAILED`
-                    
-`                    .`
-
-`                    .`
-
-`                    .`
 
 Další ukázka:
 
-`Klient                  Server`
 
-`------------------------------------------`
-`                    .`
-
-`                    .`
-
-`                    .`
-
-`                  <---    SERVER_MOVE`
-
-`CLIENT_CONFIRM    --->`
-
-`CLIENT_RECHARGING --->`
-
-`      ...`
-
-`CLIENT_FULL_POWER --->`
- 
-`                <---    SERVER_MOVE`
-
-`CLIENT_CONFIRM  --->`
-
-`                  .`
-
-`                  .`
-
-`                  .`
 
 ## Chybové situace ##
 
@@ -455,80 +314,3 @@ Probíhá na laboratorním cvičení. Student během prezentace musí prokázat,
 3. Student nahraje zdrojový kód na odevzdávací server tak, aby bylo zřejmé, že nahrává opravdu prezentovaný kód.
 
 Je na každém studentovi, aby zajistil hladký průběh všech těchto kroků. Student zavolá cvičícího k prezentaci až po té, co je na ni připraven. Předpokládá se, že studenti prezentují svá řešení na svém notebooku, pokud ho nemáte k dispozici, poraďte se svým cvičícím, jak úlohu odprezentovat.
-
-# Additional user information #
-
-* Project written in the Python 3 language.
-* The main aim is to mediate the communication between the robot and the user.
-* This communication will be realised using the TCP/IP protocol.
-
-## Specification ##
-
-* Use Linux built-in program `ncat` to test communication with your server from the client side. Use switch `-n` to not to print a newline and switch `-e` to skip escaping.
-
-*Example:*
-``` bash
-echo -ne "Peter is Peter" | nc localhost 10000
-```
-
-* Server can receive a whole message but it is not mandatory. You have to always check the buffer for the incoming bytes and process a message once delimiter `/a/b` is read.
-* It is recommended to separate the project into more logical layers.
-    * Receiving of recharging and 3 other types of messages from a client...
-
-### Testing ###
-
-#### Authentication ####
-
-*Example:*
-``` bash
-echo -n Mnau\!\\a\\b20576 | nc localhost 10000
-```
-
-* Computing of the hash: `((ASCII * 1000) + SERVER_KEY) % 65536`
-    * `65536 = (2^16) - 1` - handling of the overflow of the 16 bit number
-* Test of the initial move:
-
-*Example*
-``` bash
-echo -n Mnau\!\\a\\b20576\\a\\bOK 1 1\\a\\bOK 1 2\\a\\b | nc localhost 10000
-```
-
-#### Initial move with an error (robot did not perform move forward) ####
-
-*Example*
-``` bash
-echo -n Mnau\!\\a\\b20576\\a\\bOK 1 1\\a\\bOK 1 1\\a\\bOK 1 2\\a\\b | nc localhost 10000
-```
-
-#### Moving of a robot to the inner square ####
-
-*Example*
-``` bash
-echo -n Mnau\!\\a\\b20576\\a\\bOK 4 5\\a\\bOK 5 5\\a\\bOK 5 5\\a\\bOK 5 4\\a\\bOK 5 3\\a\\bOK 5 2\\a\\bOK 5 2\\a\\bOK 4 2\\a\\bOK 3 2\\a\\bOK 2 2\\a\\b | nc localhost 10000
-```
-
-* Reference output: `test/test1.out`
-
-``` bash
-echo -n Mnau\!\\a\\b20576\\a\\bOK -7 -6\\a\\bOK -6 -6\\a\\bOK -6 -6\\a\\bOK -6 -6\\a\\bOK -6 -6\\a\\bOK -6 -5\\a\\bOK -6 -4\\a\\bOK -6 -3\\a\\bOK -6 -2\\a\\bOK -6 -1\\a\\bOK -6 0\\a\\bOK -6 1\\a\\bOK -6 2\\a\\bOK -6 2\\a\\bOK -5 2\\a\\bOK -4 2\\a\\bOK -3 2\\a\\bOK -2 2\\a\\bOK -1 2\\a\\bOK 0 2\\a\\bOK 1 2\\a\\bOK 2 2\\a\\b | nc localhost 10000
-```
-
-* Reference output: `test/test2.out`
-
-#### Moving of a robot to the inner square and searching for the message####
-
-*Example*
-``` bash
-echo -n Mnau\!\\a\\b20576\\a\\bOK 4 5\\a\\bOK 5 5\\a\\bOK 5 5\\a\\bOK 5 4\\a\\bOK 5 3\\a\\bOK 5 2\\a\\bOK 5 2\\a\\bOK 4 2\\a\\bOK 3 2\\a\\bOK 2 2\\a\\bOK 1 2\\a\\bOK 0 2\\a\\bOK -1 2\\a\\bOK -2 2\\a\\bOK -2 2\\a\\bOK -2 2\\a\\bOK -2 2\\a\\bOK -2 1\\a\\bOK -2 1\\a\\bOK -2 1\\a\\bOK -2 1\\a\\bOK -1 1\\a\\bOK 0 1\\a\\bOK 1 1\\a\\bOK 2 1\\a\\bOK 2 1\\a\\bOK 2 0\\a\\bOK 2 0\\a\\bOK 1 0\\a\\bOK 0 0\\a\\bOK -1 0\\a\\bOK -2 0\\a\\bOK -2 0\\a\\bOK -2 0\\a\\bOK -2 0\\a\\bOK -2 -1\\a\\bOK -2 -1\\a\\bOK -2 -1\\a\\bOK -2 -1\\a\\bOK -1 -1\\a\\bOK 0 -1\\a\\bOK 1 -1\\a\\bOK 2 -1\\a\\bOK 2 -1\\a\\bOK 2 -2\\a\\bOK 2 -2\\a\\bOK 1 -2\\a\\bOK 0 -2\\a\\bOK -1 -2\\a\\bOK -2 -2\\a\\b | nc localhost 10000
-```
-
-* Reference output: `test/test3.out`
-
-#### Moving of a robot to the inner square and finding a message after searching####
-
-*Example*
-``` bash
-echo -n Mnau\!\\a\\b20576\\a\\bOK 4 5\\a\\bOK 5 5\\a\\bOK 5 5\\a\\bOK 5 4\\a\\bOK 5 3\\a\\bOK 5 2\\a\\bOK 5 2\\a\\bOK 4 2\\a\\bOK 3 2\\a\\bOK 2 2\\a\\b\\a\\bOK 1 2\\a\\b\\a\\bOK 0 2\\a\\b\\a\\bOK -1 2\\a\\b\\a\\bOK -2 2\\a\\b\\a\\bOK -2 2\\a\\bOK -2 2\\a\\bOK -2 2\\a\\bOK -2 1\\a\\b\\a\\bOK -2 1\\a\\bOK -2 1\\a\\bOK -2 1\\a\\bOK -1 1\\a\\b\\a\\bOK 0 1\\a\\b\\a\\bOK 1 1\\a\\b\\a\\bOK 2 1\\a\\b\\a\\bOK 2 1\\a\\bOK 2 0\\a\\b\\a\\bOK 2 0\\a\\bOK 1 0\\a\\b\\a\\bOK 0 0\\a\\b\\a\\bOK -1 0\\a\\b\\a\\bOK -2 0\\a\\b\\a\\bOK -2 0\\a\\bOK -2 0\\a\\bOK -2 0\\a\\bOK -2 -1\\a\\b\\a\\bOK -2 -1\\a\\bOK -2 -1\\a\\bOK -2 -1\\a\\bOK -1 -1\\a\\bSecret message\!\\a\\b | nc localhost 10000
-```
-
-* Reference output: `test/test4.out`
