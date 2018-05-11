@@ -206,7 +206,7 @@ Stáhněte a rozbalte obraz. Výsledný soubor spusťte ve VirtualBoxu. Po spuš
 
 Prvním parametrem je číslo portu, na kterém bude naslouchat váš server. Následuje parametr se vzdálenou adresou serveru. Pokud je váš server spuštěn na stejném počítači jako VirtualBox, použijte adresu defaultní brány. Postup je naznačen na následujícím obrázku:
 
-![alt text](https://gitlab.fit.cvut.cz/patrotom-internal/BI-PSI/tcp-ip-project/blob/master/pictures/pic6.png "Picture 6")
+![](pictures/pic6.png)
 
 Výstup je poměrně dlouhý, proto je výhodné přesměrovat jej příkazu less, ve kterém se lze dobře pohybovat.
 
